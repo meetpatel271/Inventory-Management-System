@@ -1,8 +1,9 @@
 require('dotenv').config();
 const express = require('express');
-const user = require('./routes/user');
 const db = require('./config/db')
 const app = express();
+const user = require('./routes/user');
+const category = require('./routes/category');
 
 const PORT = 8000;
 
@@ -17,6 +18,7 @@ db.connect((err) => {
 
 app.use(express.json());
 app.use('', user);
+app.use('', category);
 
 app.listen(PORT, function() {
     console.log(`Server Run on ${PORT} Port`);

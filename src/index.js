@@ -4,6 +4,7 @@ const db = require('./config/db')
 const app = express();
 const user = require('./routes/user');
 const category = require('./routes/category');
+const product = require('./routes/product');
 
 const PORT = 8000;
 
@@ -19,6 +20,7 @@ db.connect((err) => {
 app.use(express.json());
 app.use('', user);
 app.use('', category);
+app.use('', product);
 
 app.listen(PORT, function() {
     console.log(`Server Run on ${PORT} Port`);

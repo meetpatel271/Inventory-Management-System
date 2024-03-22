@@ -177,7 +177,7 @@ const getUserById = (req, res) => {
     const userId = req.params.id;
 
     db.query(
-      "SELECT id, firstname, lastname, email FROM users WHERE id = ?",
+      "SELECT id, firstname, lastname, email FROM users WHERE id = ? AND deletedAt IS NULL",
       [userId],
       (err, results) => {
         if (err) {
@@ -213,7 +213,7 @@ const getAllUser = (req, res) => {
   try {
     
     db.query(
-      "SELECT id, firstname, lastname, email FROM users",
+      "SELECT id, firstname, lastname, email FROM users WHERE deletedAt IS NULL",
       (err, results) => {
         if (err) {
           console.log("Server error about query", err);
@@ -234,7 +234,6 @@ const getAllUser = (req, res) => {
 const updateUserDetail = async (req, res) => {
   const userId = req.params.id;
   const { firstName, lastName, password } = req.body;
-
   try {
     db.query(
       "SELECT * FROM users WHERE id = ?",
@@ -250,7 +249,6 @@ const updateUserDetail = async (req, res) => {
         }
 
         const existingUser = results[0];
-
         let hashedPassword = existingUser.password;
         if (password) {
           const saltRounds = 10;
@@ -258,22 +256,46 @@ const updateUserDetail = async (req, res) => {
           hashedPassword = await bcrypt.hash(password, saltKey);
         }
 
-        db.query(
-          "UPDATE users SET firstName = ?, lastName = ?, password = ?, updatedAtIP = ? WHERE id = ?",
-          [firstName, lastName, hashedPassword, ip() || ipv6(), userId],
-          (err, result) => {
+        let updateFields = [];
+        let params = [];
+
+          if (firstName) {
+            updateFields.push("firstName = ?");
+            params.push(firstName);
+          }
+
+        if (lastName) {
+          updateFields.push("lastName = ?");
+          params.push(lastName);
+        }
+
+        if (hashedPassword) {
+          updateFields.push("password = ?");
+          params.push(hashedPassword);
+        }
+
+        if (updateFields.length === 0) {
+          return res.status(400).json({ message: "No fields to update" });
+      }
+
+        const updatedAtIP = ip() || ipv6();
+
+        params.push(updatedAtIP); // Add updatedAtIP to params
+        params.push(userId);
+
+      const updateQuery = `UPDATE users SET ${updateFields.join(', ')}, updatedAtIP = ? WHERE id = ?`;
+      db.query(
+        updateQuery,
+        params,
+        (err, result) => {
             if (err) {
-              console.error("Server error about query", err);
-              return res
-                .status(400)
-                .json({ error: "Error occurred during update" });
+                console.error("Server error about query", err);
+                return res.status(400).json({ error: "Error occurred during update" });
             }
             // If the update is successful, return success message
-            return res
-              .status(200)
-              .json({ message: "User updated successfully" });
+            return res.status(200).json({ message: "User updated successfully" });
           }
-        );
+        );  
       }
     );
   } catch (error) {
@@ -281,6 +303,7 @@ const updateUserDetail = async (req, res) => {
     return res.status(400).json({ error: "Error occurred during update" });
   }
 };
+
 
 // Update Delete By ID
 const deleteUser = async (req, res) => {

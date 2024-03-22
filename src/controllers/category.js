@@ -15,7 +15,7 @@ const createCategory = async(req, res) => {
                 console.log("Server error about query", err);
                 return res
                   .status(400)
-                  .json({ message: "Error occurred during signup" });
+                  .json({ message: "Error occurred during Category" });
               }
       
               if (result.length > 0) {
@@ -60,7 +60,7 @@ const createCategory = async(req, res) => {
 const getCategoryById = async(req, res) => {
     try {
         const categoryId = req.params.id;
-        db.query("SELECT id, name, code FROM categorys WHERE id = ?",[categoryId], (err, results) => {
+        db.query("SELECT id, name, code FROM categorys WHERE id = ? AND deletedAt IS NULL",[categoryId], (err, results) => {
             if (err) {
                 console.log("Server error about query", err);
                 return res.json({ error: err });
@@ -89,7 +89,7 @@ const getCategoryById = async(req, res) => {
 //Get All Category 
 const getAllCategory = async(req, res) => {
     try {
-      db.query("SELECT id, name, code FROM categorys", (err, results) => {
+      db.query("SELECT id, name, code FROM categorys WHERE deletedAt IS NULL", (err, results) => {
         if (err) {
           console.log("Server error about query", err);
           return res.json({ error: err });
@@ -121,26 +121,46 @@ const updateCategoryDetail = async(req, res) =>{
             if (results.length === 0) {
               return res.status(404).json({ message: "Category not found" });
             }
-            
-            db.query(
-              "UPDATE categorys SET name = ?, code = ?, updatedAtIP = ? WHERE id = ?",
-              [name, code, ip() || ipv6(), categoryId],
-              (err, result) => {
-                if (err) {
-                  console.error("Server error about query", err);
-                  return res
-                    .status(400)
-                    .json({ error: "Error occurred during update" });
-                }
-                // If the update is successful, return success message
-                return res
-                  .status(200)
-                  .json({ message: "Category updated successfully" });
-              }
-            );
+
+            let updateFields = [];
+            let params = [];
+
+            if (name) {
+              updateFields.push("name = ?");
+              params.push(name);
           }
-        );
-      } catch (error) {
+
+            if (code) {
+              updateFields.push("code = ?");
+              params.push(code);
+          }
+          
+          const updatedAtIP = ip() || ipv6();
+
+          params.push(updatedAtIP);
+          params.push(categoryId);
+
+          if (updateFields.length === 0) {
+            return res.status(400).json({ message: "No fields to update" });
+        }
+            
+        const updateQuery = `UPDATE categorys SET ${updateFields.join(', ')}, updatedAtIP = ? WHERE id = ?`;
+        db.query(
+          updateQuery,
+          params,
+          (err, result) => {
+              if (err) {
+                  console.error("Server error about query", err);
+                  return res.status(400).json({ error: "Error occurred during update" });
+              }
+              // If the update is successful, return success message
+              return res.status(200).json({ message: "Category updated successfully" });
+            }
+          );  
+        }
+      );
+    }
+      catch (error) {
         console.error("Error occurred during update", error);
         return res.status(400).json({ error: "Error occurred during update" });
       }

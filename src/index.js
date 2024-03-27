@@ -6,6 +6,8 @@ const user = require('./controllers/user');
 const category = require('./controllers/category');
 const product = require('./controllers/product');
 const purchase  = require('./controllers/purchase');
+const sale  = require('./controllers/sale');
+
 
 const PORT = 8000;
 
@@ -23,6 +25,7 @@ app.use('', user);
 app.use('', category);
 app.use('', product);
 app.use('', purchase);
+app.use('', sale);
 
 app.listen(PORT, function() {
     console.log(`Server Run on ${PORT} Port`);

@@ -1,33 +1,10 @@
-const { query } = require("express");
 const db = require("../config/db");
 const { ip, ipv6 } = require("address");
-const Joi = require("joi");
-
-const createProductSchema = Joi.object({
-    userId: Joi.number().required().min(1),
-    categoryId: Joi.number().required().min(1),
-    name: Joi.string().required().max(50).min(1),
-    productCode: Joi.number().required().min(1),
-    mrp: Joi.number().required().min(1),
-});
-
-const updateProductSchema = Joi.object({
-    name: Joi.string().max(50).min(1),
-    productCode: Joi.number().min(1),
-    mrp: Joi.number().min(1),
-});
-
-
 
 // Create New Product
 const createProduct = (req, res) =>{
     const { userId, categoryId, name, productCode, mrp } = req.body;
     try {
-        const { error, value } = createProductSchema.validate(req.body);
-        if (error) {
-        return res.status(400).json({ message: error.details[0].message });
-        }
-
         db.query("SELECT * FROM products WHERE name = ?", [name], (err, result) =>{
             if(err){
                 console.log("Server error about query", err);
@@ -38,7 +15,7 @@ const createProduct = (req, res) =>{
 
               if(result.length > 0){
                     return res.status(400).json({ message: "Category already exists" });
-              } else{
+              } 
                 const createdAtIP = ip() || ipv6();
                 db.query("INSERT INTO products (userId, categoryId, name, productCode, mrp, createdAtIP, updatedAtIP) VALUES(?, ?, ?, ?, ?, ?, ?)",
                 [userId, categoryId, name, productCode, mrp, createdAtIP, createdAtIP],
@@ -53,9 +30,7 @@ const createProduct = (req, res) =>{
                           .status(201)
                           .json({ message: "New Product Created"});
                       }
-                }
-                )
-              }
+                });
             }
         );
     } catch (error) {
@@ -100,14 +75,13 @@ const getProductById = (req, res) =>{
 const getAllProduct = (req, res) =>{
     try {
         db.query("SELECT id, name, productCode, mrp FROM products WHERE deletedAt IS NULL", (err, results) =>{
-            if(err){
-                console.log("Server error about query", err);
-                return res.json ({ error: err });
-            } else{
-                console.log("Successfully retrieved all products")
-                res.status(200).json(results);
-            }
-        });
+                if(err){
+                    console.log("Server error about query", err);
+                    return res.json ({ error: err });
+                } 
+                    console.log("Successfully retrieved all products")
+                    res.status(200).json(results);
+            });
     } catch (error) {
         console.error("Error in getAllProduct:", error);
         return res.json({ error });
@@ -120,11 +94,6 @@ const updateProductDetail = (req, res) => {
     const  {name, productCode, mrp} = req.body;
     
     try {
-        const { error, value } = updateProductSchema.validate(req.body);
-        if (error) {
-        return res.status(400).json({ message: error.details[0].message });
-        }
-
         db.query("SELECT * FROM products WHERE ?", [productId], (error,results) => {
             if(error){
                 console.log("Server error about query", error)
@@ -191,11 +160,9 @@ const deleteProduct = (req, res) =>{
 
             if(results.affectedRows === 0){
                 return res.status(404).json({ message: "Product not found" });
-            } else {
-                return res.status(200).json({ message: "Product delete successfully" });
-            }
-
-        })
+            } 
+            res.status(200).json({ message: "Product delete successfully" });
+        });
     } catch (error) {
         console.error("Error occurred during delete", error);
         return res.status(400).json({ error: "Error occurred during delete" });

@@ -3,45 +3,6 @@ const bcrypt = require("bcrypt");
 const { ip, ipv6 } = require("address");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
-const Joi = require("joi");
-
-const signupSchema = Joi.object({
-  firstName: Joi.string().required().max(50).min(1),
-  lastName: Joi.string().required().max(50).min(1),
-  email: Joi.string()
-    .regex(/^\S+@\S+\.\S+$/)
-    .required().max(100).min(1)
-    .messages({
-      "string.pattern.base":
-        "Invalid email format? required: johndoe@example.com",
-    }),
-  password: Joi.string().required().max(255).min(1),
-  userType: Joi.string().valid("0", "1").required(), // Add other valid user types if needed
-});
-
-const loginSchema = Joi.object({
-  email: Joi.string()
-    .regex(/^\S+@\S+\.\S+$/)
-    .required().max(100).min(1)
-    .messages({
-      "string.pattern.base":
-        "Invalid email format? required: johndoe@example.com",
-    }),
-  password: Joi.string().required().max(255).min(1),
-});
-
-const userUpdateSchema = Joi.object({
-  firstName: Joi.string().max(50).min(1),
-  lastName: Joi.string().max(50).min(1),
-  email: Joi.string().max(100).min(1)
-    .regex(/^\S+@\S+\.\S+$/)
-    .messages({
-      "string.pattern.base":
-        "Invalid email format? required: johndoe@example.com",
-    }),
-  password: Joi.string().max(255).min(1),
-  userType: Joi.string().valid("0", "1"), // Add other valid user types if needed
-});
 
 const generateToken = (payload, expiresIn) => {
   // Generate JWT token
@@ -52,10 +13,6 @@ const generateToken = (payload, expiresIn) => {
 const signup = async (req, res) => {
   const { firstName, lastName, email, password, userType } = req.body;
   try {
-    const { error, value } = signupSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
     // Check if email already exists
     db.query(
       "SELECT * FROM users WHERE email = ?",
@@ -81,16 +38,7 @@ const signup = async (req, res) => {
 
           db.query(
             "INSERT INTO users (firstName, lastName, email, password, saltKey, userType, createdAtIP, updatedAtIP) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-              firstName,
-              lastName,
-              email,
-              hashedPassword,
-              saltKey,
-              userType,
-              createdAtIP,
-              createdAtIP,
-            ],
+            [firstName, lastName, email, hashedPassword, saltKey, userType, createdAtIP, createdAtIP],
             (err, result) => {
               if (err) {
                 console.log("Server error about query", err);
@@ -139,11 +87,6 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const { error, value } = loginSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
-
     db.query(
       "SELECT * FROM users WHERE email = ? AND deletedAt IS NULL",
       [email],
@@ -163,7 +106,7 @@ const login = async (req, res) => {
 
         if (!passwordMatch) {
           return res.status(401).json({ error: "Incorrect Password" });
-        } else {
+        } 
           const authToken = generateToken(
             { id: user.Id, userId: user.id, userType: user.userType },
             "1h"
@@ -176,7 +119,6 @@ const login = async (req, res) => {
               Email: user.email,
               authToken,
             });
-        }
       }
     );
   } catch (error) {
@@ -231,10 +173,10 @@ const getAllUser = (req, res) => {
         if (err) {
           console.log("Server error about query", err);
           return res.json({ error: err });
-        } else {
+        } 
           const users = results.map((users) => users);
           res.status(200).json(users);
-        }
+        
       }
     );
   } catch (error) {
@@ -248,11 +190,6 @@ const updateUserDetail = async (req, res) => {
   const userId = req.params.id;
   const { firstName, lastName, password } = req.body;
   try {
-    const { error, value } = userUpdateSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
-
     db.query(
       "SELECT * FROM users WHERE id = ?",
       [userId],
@@ -339,9 +276,10 @@ const deleteUser = async (req, res) => {
 
         if (results.affectedRows === 0) {
           return res.status(404).json({ message: "User not found" });
-        } else {
-          return res.status(200).json({ message: "User Delete successfully" });
-        }
+        } 
+        
+        res.status(200).json({ message: "User Delete successfully" });
+        
       }
     );
   } catch (error) {

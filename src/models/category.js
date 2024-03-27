@@ -1,28 +1,11 @@
 const db = require("../config/db");
 const { ip, ipv6 } = require("address");
-const Joi = require("joi");
-
-const createCategorySchema = Joi.object({
-  userId: Joi.number().required().min(1),
-  name: Joi.string().required().max(50).min(1),
-  code: Joi.number().required().min(1),
-});
-
-const updateCategorySchema = Joi.object({
-  name: Joi.string().max(50).min(1),
-  code: Joi.number().min(1),
-});
 
 // Create New Category
 const createCategory = async(req, res) => {
     const { userId, name, code } = req.body;
     try {
-      const { error, value } = createCategorySchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
-
-        db.query(
+      db.query(
             "SELECT * FROM categorys WHERE name = ?",
             [name],
             async (err, result) => {
@@ -36,8 +19,7 @@ const createCategory = async(req, res) => {
               if (result.length > 0) {
                 // Category already exists
                 return res.status(400).json({ message: "Category already exists" });
-              } else {
-                
+              } 
                 const createdAtIP = ip() || ipv6();
                 
                 db.query(
@@ -62,7 +44,7 @@ const createCategory = async(req, res) => {
                     }
                   }
                 );
-              }
+              
             }
           );
         
@@ -108,10 +90,10 @@ const getAllCategory = async(req, res) => {
         if (err) {
           console.log("Server error about query", err);
           return res.json({ error: err });
-        } else {
+        } 
           const category = results.map((category) => category);
           res.status(200).json(category);
-        }
+        
       });
     } catch (error) {
       console.error("Error in getAllCategory:", error);
@@ -124,11 +106,7 @@ const updateCategoryDetail = async(req, res) =>{
     const categoryId = req.params.id;
     const { name, code } = req.body;
     try {
-      const { error, value } = updateCategorySchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
-        db.query(
+      db.query(
           "SELECT * FROM categorys WHERE id = ?",
           [categoryId],
           async (err, results) => {
@@ -200,9 +178,8 @@ const deleteCategory = async(req, res) => {
     
             if (results.affectedRows === 0) {
               return res.status(404).json({ message: "Category not found" });
-            } else {
-              return res.status(200).json({ message: "Category delete successfully" });
-            }
+            } 
+            res.status(200).json({ message: "Category delete successfully" });
           }
         );
       } catch (error) {
